@@ -8,13 +8,16 @@ var
   fs = require('fs'),
   path = require('path'),
   express = require('express'),
+  uuid = require('node-uuid'),
   app = express(),
   files_serve_app = express(),
   server = http.createServer(app),
   files_server = http.createServer(files_serve_app),
   job_id_counter = 1,
+  change_id_counter = 1,
   storage_dir = path.join(__dirname, 'storage'),
   solr_client = solr.createClient("172.17.0.3", '8983', 'item'),
+  solr_field_client = solr.createClient("172.17.0.3", '8983', 'field'),
   easyimg = require('easyimage'),
   storage_dir = path.join(__dirname, 'storage');
 
@@ -27,6 +30,7 @@ function vx_id_to_id(vx_id) {
 }
 
 solr_client.autoCommit = true;
+solr_field_client.autoCommit = true;
 
 files_serve_app.use(express.static(storage_dir));
 
@@ -225,10 +229,28 @@ app.put('/API/item/:vx_id', function (req, res) {
         res.send(400, 'Item ID not given');
         return;
     }
-    body = request.body;
+    body = req.body;
+    console.log('body', body);
     body.forEach(function(item) {
         var doc = {
-
+            "uuid": uuid.v1(),
+            "name": item.name,
+            "timestamp": (new Date).toISOString(),
+            "user": "admin",
+            "change": "VX-" + change_id_counter++,
+            "value": item.value,
+            "vx_id": vx_id
+        };
+        docs.push(doc);
+    });
+    console.log('docs', docs);
+    solr_field_client.add(docs, function(err, obj) {
+        if (err) {
+            console.error('Failed to update solr', vx_id, err);
+            res.send(500, 'Failed to update solr');
+        } else {
+            console.log('Updated solr', vx_id);
+            res.send(200, 'Updated');
         }
     });
 });
