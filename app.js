@@ -4,6 +4,7 @@
 'use strict';
 var
   http = require('http'),
+  solr = require('solr-client'),
   fs = require('fs'),
   path = require('path'),
   express = require('express'),
@@ -12,7 +13,8 @@ var
   server = http.createServer(app),
   files_server = http.createServer(files_serve_app),
   job_id_counter = 1,
-  storage_dir = path.join(__dirname, 'storage');
+  storage_dir = path.join(__dirname, 'storage'),
+  solr_client = solr.createClient();
 
 function String_startsWith(str, prefix) {
     return str.substring(0, prefix.length) === prefix;
@@ -73,6 +75,14 @@ app.get('/API/version', function (req, res) {
         }
     };
     res.json(version_info);
+});
+
+app.post('/API/import/placeholder', function(req, res) {
+    if (!req.is('application/json')) {
+        res.send(400, 'JSON body expected');
+        return;
+    }
+
 });
 
 app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
