@@ -14,11 +14,13 @@ var
   files_server = http.createServer(files_serve_app),
   job_id_counter = 1,
   storage_dir = path.join(__dirname, 'storage'),
-  solr_client = solr.createClient();
+  solr_client = solr.createClient("172.17.0.3", '8983', 'item');
 
 function String_startsWith(str, prefix) {
     return str.substring(0, prefix.length) === prefix;
 }
+
+solr_client.autoCommit = true;
 
 files_serve_app.use(express.static(storage_dir));
 
@@ -78,11 +80,42 @@ app.get('/API/version', function (req, res) {
 });
 
 app.post('/API/import/placeholder', function(req, res) {
+    var doc;
+
     if (!req.is('application/json')) {
         res.send(400, 'JSON body expected');
         return;
     }
 
+    doc = {
+        'vx_id': 'VX-1'
+    };
+
+
+    // var query = solr_client.createQuery();
+    //     solr_client.search(query,function(err,obj){
+    //        if(err){
+    //         console.error('error', err);
+    //        }else{
+    //         console.log('success', obj);
+    //        }
+    //     });
+
+    // return;
+
+    solr_client.add([doc], function(err, obj) {
+        var vx_id;
+
+        if (err) {
+            console.error(err);
+            res.send(500, 'Failed to create solr item');
+        } else {
+            console.log('Created solr item', vx_id);
+            res.json({
+                "id": vx_id
+            });
+        }
+    });
 });
 
 app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
