@@ -355,6 +355,42 @@ app.get('/API/item/:vx_id', function(req, res) {
     });
 });
 
+app.get('/API/item/:vx_id/metadata', function(req, res) {
+    var vx_id = req.params.vx_id;
+
+    var query = solr_field_client.createQuery().q("vx_id:" + vx_id).rows(10000);
+
+    solr_field_client.search(query, function(err, result) {
+        if (err) {
+            console.error('Could not find asset', err);
+            res.send(500, 'Could not search');
+        } else if (result.response.numFound < 1) {
+            res.send(404, 'Asset does not exist');
+        } else {
+
+            var data = {
+                "item": [
+                    {
+                        "id": vx_id,
+                        "metadata": {
+                            "revision": vx_id,
+                            "timespan": [
+                                {
+                                    "start": "-INF",
+                                    "end": "+INF",
+                                    "field": result.response.docs,
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+
+            res.json(data);
+        }
+    });
+});
+
 function serve_thumbnail(res, file_name) {
     var dst = 'thumbnail/' + file_name;
     var src = 'storage/' + file_name;
