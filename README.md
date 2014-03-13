@@ -17,6 +17,7 @@ To run it:
     docker run --tty -d -p 8983:8983 -p 3022:22 -v `pwd`/solr:/opt/solr_data:rw solr
 
 To ssh (root:root):
+
     ssh 0.0.0.0 -p 122 -o "UserKnownHostsFile /dev/null" -o "LogLevel ERROR" -o "StrictHostKeyChecking no"
     ssh -p 2022 root@localhost
 
