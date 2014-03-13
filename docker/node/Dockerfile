@@ -4,7 +4,8 @@ RUN echo "deb http://uk.archive.ubuntu.com/ubuntu/ `lsb_release -c -s` main" >> 
 RUN echo "deb http://uk.archive.ubuntu.com/ubuntu/ `lsb_release -c -s` universe" >> /etc/apt/sources.list
 RUN apt-get -qq update
 
-RUN apt-get install -y npm
+###################### Node ######################
+RUN apt-get install -y npm imagemagick
 
 
 ##################### Python #####################
