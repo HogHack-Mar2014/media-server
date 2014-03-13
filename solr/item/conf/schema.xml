@@ -92,13 +92,14 @@
      default: a value that should be used if no value is specified
        when adding a document.
    -->
-    
+
     <field name="vx_id" stored="true" type="string" multiValued="false" indexed="true"/>
+    <field name="id" stored="true" type="sint" multiValued="false" indexed="true"/>
   </fields>
   <!-- Field to use to determine and enforce document uniqueness.
       Unless this field is marked with required="false", it will be a required field
    -->
-  <uniqueKey>vx_id</uniqueKey>
-  <defaultSearchField>vx_id</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
+  <defaultSearchField>id</defaultSearchField>
   <solrQueryParser defaultOperator="AND"/>
 </schema>

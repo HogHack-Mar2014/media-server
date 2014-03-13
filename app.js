@@ -80,42 +80,54 @@ app.get('/API/version', function (req, res) {
 });
 
 app.post('/API/import/placeholder', function(req, res) {
-    var doc;
+    var query;
 
     if (!req.is('application/json')) {
         res.send(400, 'JSON body expected');
         return;
     }
 
-    doc = {
-        'vx_id': 'VX-1'
-    };
+    /* We find the max id, so we can calculate the next one */
+    var query = solr_client.createQuery().q("*:*").sort({id: 'desc'}).rows(1);
 
-
-    // var query = solr_client.createQuery();
-    //     solr_client.search(query,function(err,obj){
-    //        if(err){
-    //         console.error('error', err);
-    //        }else{
-    //         console.log('success', obj);
-    //        }
-    //     });
-
-    // return;
-
-    solr_client.add([doc], function(err, obj) {
-        var vx_id;
-
+    solr_client.search(query, function(err, result) {
+        console.log('result', result);
+        var old_id, vx_id, id, doc;
         if (err) {
-            console.error(err);
-            res.send(500, 'Failed to create solr item');
-        } else {
-            console.log('Created solr item', vx_id);
-            res.json({
-                "id": vx_id
-            });
+            console.error('Could not find max id', err);
+            res.send(500, 'Could not search');
         }
+
+        if (result.response.numFound < 1) {
+            id = 1; // No documents yet.
+            console.log('First document will have id', id);
+        } else {
+            old_id = result.response.docs[0].id;
+            console.log("Old id", old_id);
+            id = old_id + 1;
+            console.log('Next document will have id', id);
+        }
+        vx_id = 'VX-' + id;
+
+        /* We established the ID of the new item.
+         * Now we add the new document. */
+        doc = {
+            'vx_id': vx_id,
+            'id': id
+        };
+        solr_client.add(doc, function(err, obj) {
+            if (err) {
+                console.error(err);
+                res.send(500, 'Failed to create solr item');
+            } else {
+                console.log('Created solr item', vx_id);
+                res.json({
+                    "id": vx_id
+                });
+            }
+        });
     });
+
 });
 
 app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
