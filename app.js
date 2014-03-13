@@ -213,12 +213,28 @@ app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
 
 app.get('/API/thumbnail/:col_id/:vx_id', function (req, res) {
     var vx_id = req.params.vx_id;
-    var dst = 'thumbnail/' + vx_id + '.jpg';
-    var src = 'storage/' + vx_id + '.jpg';
+
+    var query = solr_client.createQuery().q("vx_id:" + vx_id).rows(1);
+
+    solr_client.search(query, function(err, result) {
+        if (err) {
+            console.error('Could not find asset', err);
+            res.send(500, 'Could not search');
+        } else if (result.response.numFound < 1) {
+            res.send(404, 'Asset does not exist');
+        } else {
+            console.log(result.response.docs[0]);
+            serve_thumbnail(res, result.response.docs[0].file);
+        }
+    });
+});
+
+function serve_thumbnail(res, file_name) {
+    var dst = 'thumbnail/' + file_name;
+    var src = 'storage/' + file_name;
 
     if (fs.existsSync(dst)) {
         res.sendfile(dst);
-        return;
     } else if (!fs.existsSync(src)) {
         res.send(404, 'Sorry, we cannot find that!');
         res.end();
@@ -238,7 +254,7 @@ app.get('/API/thumbnail/:col_id/:vx_id', function (req, res) {
             }
         });
     }
-});
+}
 
 server.listen(8080);
 console.log(
