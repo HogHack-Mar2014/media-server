@@ -211,6 +211,28 @@ app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
     res.json(result);
 });
 
+app.put('/API/item/:vx_id', function (req, res) {
+    var vx_id,
+        body,
+        docs = [];
+
+    if (!req.is('application/json')) {
+        res.send(400, 'JSON body expected');
+        return;
+    }
+    vx_id = req.params.vx_id;
+    if (!vx_id) {
+        res.send(400, 'Item ID not given');
+        return;
+    }
+    body = request.body;
+    body.forEach(function(item) {
+        var doc = {
+
+        }
+    });
+});
+
 app.get('/API/thumbnail/:col_id/:vx_id', function (req, res) {
     var vx_id = req.params.vx_id;
     var dst = 'thumbnail/' + vx_id + '.jpg';
