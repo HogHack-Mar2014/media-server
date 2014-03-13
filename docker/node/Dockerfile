@@ -28,6 +28,6 @@ RUN echo 'root:root' | chpasswd
 RUN sed -i.old -r -e 's/^(\w+\s+)(\w+)(\s+pam_loginuid.*)$/\1optional\3/' /etc/pam.d/sshd
 
 VOLUME ["/opt/node"]
-EXPOSE 22 3000
+EXPOSE 22 8080 8090
 
 CMD supervisord

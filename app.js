@@ -4,9 +4,24 @@
 'use strict';
 var
   http = require('http'),
+  fs = require('fs'),
+  path = require('path'),
   express = require('express'),
   app = express(),
-  server = http.createServer(app);
+  files_serve_app = express(),
+  server = http.createServer(app),
+  files_server = http.createServer(files_serve_app),
+  job_id_counter = 1,
+  storage_dir = path.join(__dirname, 'storage');
+
+function String_startsWith(str, prefix) {
+    return str.substring(0, prefix.length) === prefix;
+}
+
+files_serve_app.use(express.static(storage_dir));
+
+app.use(express.json());
+app.use(express.urlencoded());
 
 app.get('/API/version', function (req, res) {
     var version_info = {
@@ -42,16 +57,7 @@ app.get('/API/version', function (req, res) {
             },
             "macaddresses" : {
                 "macaddress" : [
-                    "00:0c:29:4b:09:9e",
-                    "00:0c:29:5e:cc:02",
-                    "00:0c:29:99:f8:87",
-                    "00:0c:29:ae:d0:89",
-                    "00:0c:29:b2:6e:44",
-                    "00:0c:29:d5:7a:8d",
-                    "00:0c:29:dc:08:a7",
-                    "00:0c:29:df:e2:c9",
-                    "00:50:56:aa:44:fc",
-                    "00:50:56:aa:6e:ab"
+                    "00:0c:29:4b:09:9e"
                 ]
             },
             "storageNumber" : {
@@ -69,7 +75,74 @@ app.get('/API/version', function (req, res) {
     res.json(version_info);
 });
 
-server.listen(3000);
-console.log('Express server listening on port %d in %s mode',
-        server.address().port, app.settings.env
-        );
+app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
+    var vx_id,
+        uri,
+        ext,
+        new_file_name,
+        new_path,
+        job_id,
+        now,
+        input_file_path,
+        read_stream,
+        write_stream;
+
+    if (!req.is('application/json')) {
+        res.send(400, 'JSON body expected');
+        return;
+    }
+    vx_id = req.params.vx_id;
+    if (!vx_id) {
+        res.send(400, 'Item ID not given');
+        return;
+    }
+    uri = req.query.uri;
+    if (!uri) {
+        res.send(400, 'Path not given');
+        return;
+    }
+    if (!String_startsWith(uri, 'file://')) {
+        res.send(400, 'Only local files are supported');
+    }
+    input_file_path = uri.substring(7);
+    ext = path.extname(uri);
+    new_file_name = vx_id + ext;
+    new_path = path.join(storage_dir, new_file_name);
+
+    read_stream = fs.createReadStream(input_file_path);
+    read_stream.on("error", function(err) {
+        console.error('Error in reading stream', err);
+    });
+    write_stream = fs.createWriteStream(new_path);
+    write_stream.on("error", function(err) {
+        console.error("Error in writing stream", err);
+    })
+    write_stream.on("close", function() {
+        console.log("Finished copying", input_file_path, "to", new_path);
+    });
+    read_stream.pipe(write_stream);
+
+    job_id = 'VX-' + job_id_counter++;
+    now = new Date;
+
+    var result = {
+        "jobId": job_id,
+        "user": "admin", // TODO
+        "started": now.toISOString(),
+        "status": "FINISHED",
+        "type": "PLACEHOLDER_IMPORT",
+        "priority": "MEDIUM"
+    };
+    res.json(result);
+});
+
+server.listen(8080);
+console.log(
+    'API server listening on port %d in %s mode',
+    server.address().port, app.settings.env
+);
+files_server.listen(8090);
+console.log(
+    'Files server listening on port %d in %s mode',
+    files_server.address().port, files_serve_app.settings.env
+);
