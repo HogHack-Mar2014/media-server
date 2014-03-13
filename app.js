@@ -4,17 +4,21 @@
 'use strict';
 var
   http = require('http'),
+  md5 = require('MD5'),
   solr = require('solr-client'),
   fs = require('fs'),
   path = require('path'),
   express = require('express'),
+  uuid = require('node-uuid'),
   app = express(),
   files_serve_app = express(),
   server = http.createServer(app),
   files_server = http.createServer(files_serve_app),
   job_id_counter = 1,
+  change_id_counter = 1,
   storage_dir = path.join(__dirname, 'storage'),
   solr_client = solr.createClient("172.17.0.3", '8983', 'item'),
+  solr_field_client = solr.createClient("172.17.0.3", '8983', 'field'),
   easyimg = require('easyimage'),
   storage_dir = path.join(__dirname, 'storage');
 
@@ -27,6 +31,7 @@ function vx_id_to_id(vx_id) {
 }
 
 solr_client.autoCommit = true;
+solr_field_client.autoCommit = true;
 
 files_serve_app.use(express.static(storage_dir));
 
@@ -149,22 +154,29 @@ app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
         write_stream;
 
     if (!req.is('application/json')) {
+        console.log("JSON body expected");
         res.send(400, 'JSON body expected');
         return;
     }
     vx_id = req.params.vx_id;
     if (!vx_id) {
+        console.log("Item ID not given");
         res.send(400, 'Item ID not given');
         return;
     }
     uri = req.query.uri;
     if (!uri) {
+        console.log("Path not given");
         res.send(400, 'Path not given');
         return;
     }
     if (!String_startsWith(uri, 'file://')) {
+        console.log("Only local files are supported");
         res.send(400, 'Only local files are supported');
     }
+
+    console.log("container", uri);
+
     input_file_path = uri.substring(7);
     ext = path.extname(uri);
     new_file_name = vx_id + ext;
@@ -211,6 +223,46 @@ app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
     res.json(result);
 });
 
+app.put('/API/item/:vx_id', function (req, res) {
+    var vx_id,
+        body,
+        docs = [];
+
+    if (!req.is('application/json')) {
+        res.send(400, 'JSON body expected');
+        return;
+    }
+    vx_id = req.params.vx_id;
+    if (!vx_id) {
+        res.send(400, 'Item ID not given');
+        return;
+    }
+    body = req.body;
+    console.log('body', body);
+    body.forEach(function(item) {
+        var doc = {
+            "uuid": md5(vx_id + ' ' + item.name),
+            "name": item.name,
+            "timestamp": (new Date).toISOString(),
+            "user": "admin",
+            "change": "VX-" + change_id_counter++,
+            "value": item.value,
+            "vx_id": vx_id
+        };
+        docs.push(doc);
+    });
+    console.log('docs', docs);
+    solr_field_client.add(docs, function(err, obj) {
+        if (err) {
+            console.error('Failed to update solr', vx_id, err);
+            res.send(500, 'Failed to update solr');
+        } else {
+            console.log('Updated solr', vx_id);
+            res.send(200, 'Updated');
+        }
+    });
+});
+
 app.get('/API/thumbnail/:col_id/:vx_id', function (req, res) {
     var vx_id = req.params.vx_id;
 
@@ -225,6 +277,80 @@ app.get('/API/thumbnail/:col_id/:vx_id', function (req, res) {
         } else {
             console.log(result.response.docs[0]);
             serve_thumbnail(res, result.response.docs[0].file);
+        }
+    });
+});
+
+app.get('/API/item', function(req, res) {
+    var query = solr_client.createQuery().q("*:*").rows(100);
+
+    solr_client.search(query, function(err, result) {
+        if (err) {
+            console.error('Could not find assets', err);
+            res.send(500, 'Could not search');
+        } else {
+            var data = {
+                "hits": result.response.numFound,
+                "item": [],
+            };
+
+            for (var i = 0; i < result.response.docs.length; i++) {
+                data["item"].push({
+                    "id": result.response.docs[i].vx_id,
+                    "start": "-INF",
+                    "end": "+INF",
+                    "timespan": [
+                        {
+                            "start": "-INF",
+                            "end": "+INF"
+                        }
+                    ]
+                });
+            };
+
+            res.json(data);
+        }
+    });
+});
+
+app.get('/API/html', function(req, res) {
+    var query = solr_client.createQuery().q("*:*").rows(100);
+
+    solr_client.search(query, function(err, result) {
+        if (err) {
+            console.error('Could not find assets', err);
+            res.send(500, 'Could not search');
+        } else {
+            //var ids = [];
+            var html = ["<html><body><table>"];
+
+            for (var i = 0; i < result.response.docs.length; i++) {
+                if (! result.response.docs[i].file) continue;
+                //ids.push(result.response.docs[i].vx_id),
+                html.push("<tr><td><a href='http://localhost:8090/"+result.response.docs[i].file + "'><img src='/API/thumbnail/a/" + result.response.docs[i].vx_id + "'/></a></td>");
+                html.push("<td>" + result.response.docs[i].vx_id + "</td></tr>");
+            };
+
+            html.push("</table></body></html>")
+
+            res.send(html.join(" "));
+        }
+    });
+});
+
+app.get('/API/item/:vx_id', function(req, res) {
+    var vx_id = req.params.vx_id;
+
+    var query = solr_client.createQuery().q("vx_id:" + vx_id).rows(1);
+
+    solr_client.search(query, function(err, result) {
+        if (err) {
+            console.error('Could not find asset', err);
+            res.send(500, 'Could not search');
+        } else if (result.response.numFound < 1) {
+            res.send(404, 'Asset does not exist');
+        } else {
+            res.json(result.response.docs[0]);
         }
     });
 });
