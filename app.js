@@ -4,6 +4,7 @@
 'use strict';
 var
   http = require('http'),
+  md5 = require('MD5'),
   solr = require('solr-client'),
   fs = require('fs'),
   path = require('path'),
@@ -233,7 +234,7 @@ app.put('/API/item/:vx_id', function (req, res) {
     console.log('body', body);
     body.forEach(function(item) {
         var doc = {
-            "uuid": uuid.v1(),
+            "uuid": md5(vx_id + ' ' + item.name),
             "name": item.name,
             "timestamp": (new Date).toISOString(),
             "user": "admin",
