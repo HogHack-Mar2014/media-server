@@ -1,0 +1,10 @@
+{
+  "name": "Vidi-Solr",
+  "private": true,
+  "version": "0.0.1",
+  "description": "docker, solr and node",
+  "author": "Death of all hope",
+  "dependencies": {
+    "express": "3.4.8"
+  }
+}
