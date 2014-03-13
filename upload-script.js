@@ -1,10 +1,9 @@
 
 
 var request = require('superagent'),
-    expect = require('expect.js');
-
-var VIDI_URL = 'http://10.105.12.44:8080/API';
-var VIDI_IMPORT_PATH = 'file:///opt/vidispine/import/';
+    expect = require('expect.js'), 
+    VIDI_URL = 'http://10.105.12.44:8080/API', 
+    VIDI_IMPORT_PATH = 'file:///opt/vidispine/import/';
 
 request.get(VIDI_URL + '/version/')
     .auth('admin', 'admin')
