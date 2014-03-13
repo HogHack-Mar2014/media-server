@@ -22,6 +22,10 @@ function String_startsWith(str, prefix) {
     return str.substring(0, prefix.length) === prefix;
 }
 
+function vx_id_to_id(vx_id) {
+    return parseInt(vx_id.split('-')[1], 10);
+}
+
 solr_client.autoCommit = true;
 
 files_serve_app.use(express.static(storage_dir));
@@ -175,7 +179,21 @@ app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
         console.error("Error in writing stream", err);
     })
     write_stream.on("close", function() {
+        var doc;
         console.log("Finished copying", input_file_path, "to", new_path);
+        /* Now we update the reference in solr. */
+        doc = {
+            'vx_id': vx_id,
+            'id': vx_id_to_id(vx_id),
+            'file': new_file_name
+        };
+        solr_client.add(doc, function(err, obj) {
+            if (err) {
+                console.error('Failed to update solr', vx_id, err);
+            } else {
+                console.log('Updated solr', vx_id);
+            }
+        });
     });
     read_stream.pipe(write_stream);
 
