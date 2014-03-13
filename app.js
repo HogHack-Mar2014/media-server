@@ -27,7 +27,7 @@ app.get('/API/version', function (req, res) {
     var version_info = {
         "component" : [
             {
-                "version" : "3.3.10.pre-g0d99a67-11431",
+                "version" : "0.1",
                 "name" : "API"
             }
         ],
