@@ -12,6 +12,7 @@ var
   server = http.createServer(app),
   files_server = http.createServer(files_serve_app),
   job_id_counter = 1,
+  easyimg = require('easyimage'),
   storage_dir = path.join(__dirname, 'storage');
 
 function String_startsWith(str, prefix) {
@@ -136,6 +137,35 @@ app.post('/API/import/placeholder/:vx_id/container', function(req, res) {
     res.json(result);
 });
 
+app.get('/API/thumbnail/:col_id/:vx_id', function (req, res) {
+    var vx_id = req.params.vx_id;
+    var dst = 'thumbnail/' + vx_id + '.jpg';
+    var src = 'storage/' + vx_id + '.jpg';
+
+    if (fs.existsSync(dst)) {
+        res.sendfile(dst);
+        return;
+    } else if (!fs.existsSync(src)) {
+        res.send(404, 'Sorry, we cannot find that!');
+        res.end();
+    } else {
+        var options = {
+             src: src,
+             dst: dst,
+             width:320,
+             height:200,
+        }
+
+        easyimg.thumbnail(options, function (err, image) {
+            if (err) {
+                throw err;
+            } else {
+                res.sendfile(dst);
+            }
+        });
+    }
+});
+
 server.listen(8080);
 console.log(
     'API server listening on port %d in %s mode',
@@ -146,3 +176,4 @@ console.log(
     'Files server listening on port %d in %s mode',
     files_server.address().port, files_serve_app.settings.env
 );
+
