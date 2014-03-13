@@ -12,7 +12,7 @@ To create image:
 
 To run it:
 
-    docker run --tty -d -p 3000:3000 -p 2022:22 -v /path/to/code:/opt/node:rw node
+    docker run --tty -d -p 8080:8080 -p 8090:8090 -p 2022:22 -v `pwd`:/opt/node:rw node
 
 To ssh (root:root):
     ssh 0.0.0.0 -p 122 -o "UserKnownHostsFile /dev/null" -o "LogLevel ERROR" -o "StrictHostKeyChecking no"
