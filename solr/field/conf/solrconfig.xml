@@ -53,6 +53,11 @@
 
   <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
+  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
+    <lst name="defaults">
+      <str name="stream.contentType">application/json</str>
+    </lst>
+  </requestHandler>
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
 
   <!-- config for the admin interface -->
