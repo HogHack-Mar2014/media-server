@@ -30,6 +30,6 @@
   -->
   <cores adminPath="/admin/cores" defaultCoreName="item" host="${host:}" hostPort="${jetty.port:8983}" hostContext="${hostContext:solr}">
     <core name="item" instanceDir="item" />
-    <!--core name="field" instanceDir="field" /-->
+    <core name="field" instanceDir="field" />
   </cores>
 </solr>
