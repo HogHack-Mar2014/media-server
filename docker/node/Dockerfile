@@ -27,6 +27,7 @@ ADD supervisor/sshd.conf /etc/supervisor/conf.d/sshd.conf
 RUN echo 'root:root' | chpasswd
 RUN sed -i.old -r -e 's/^(\w+\s+)(\w+)(\s+pam_loginuid.*)$/\1optional\3/' /etc/pam.d/sshd
 
-EXPOSE 22 8000
+VOLUME ["/opt/node"]
+EXPOSE 22 3000
 
 CMD supervisord
