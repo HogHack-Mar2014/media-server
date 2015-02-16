@@ -28,6 +28,12 @@ ADD supervisor/sshd.conf /etc/supervisor/conf.d/sshd.conf
 RUN echo 'root:root' | chpasswd
 RUN sed -i.old -r -e 's/^(\w+\s+)(\w+)(\s+pam_loginuid.*)$/\1optional\3/' /etc/pam.d/sshd
 
+###################### APP #######################
+RUN npm install -g nodemon@0.7.10
+RUN ln -s /usr/bin/nodejs /usr/bin/node
+ADD supervisor/node.conf /etc/supervisor/conf.d/node.conf
+
+
 VOLUME ["/opt/node"]
 EXPOSE 22 8080 8090
 
